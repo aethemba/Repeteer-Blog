@@ -5,6 +5,10 @@ from markdown import markdown
 from django.conf import settings #Import settings file
 import datetime
 
+class LiveEntryManager(models.Manager):
+   def get_query_set(self):
+       return super(LiveEntryManager, self).get_query_set().filter(status=self.model.LIVE_STATUS)
+
 class Category(models.Model):
    title = models.CharField(max_length=250, help_text='Max. 250 characters')
    slug = models.SlugField(unique=True)
@@ -22,7 +26,10 @@ class Category(models.Model):
 
    def get_absolute_url(self):
        return "/categories/%s/" % self.slug
-
+  
+   def live_entry_set(self):
+       from blog.models import Entry
+       return self.entry_set.filter(status=Entry.Live_STATUS)
 
 class Entry(models.Model):
    LIVE_STATUS = 1
@@ -73,6 +80,10 @@ class Entry(models.Model):
       return ('blog_entry_detail', (), {'year': self.pub_date.strftime("%Y"), 'month': self.pub_date.strftime("%b").lower(), 'day': self.pub_date.strftime("%d"), 'slug': self.slug})
    #decorator causes a 'reverse lookup. Uses regexp from url to create the correct url string and fills in the proper values for arguments required in the url'
    get_absolute_url = models.permalink(get_absolute_url)
+
+   live = LiveEntryManager()
+   objects = models.Manager()
+
 
 class Link(models.Model):
     title = models.CharField(max_length=250)
